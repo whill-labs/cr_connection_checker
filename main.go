@@ -34,6 +34,7 @@ type receiveUI struct {
 	errorCode          *tview.TableCell
 	speedSetting       *tview.TableCell
 	device             *tview.TableCell
+	deviceError        *tview.TableCell
 }
 
 const refreshInterval = 500 * time.Millisecond
@@ -186,6 +187,10 @@ func createReceivePanel(app *tview.Application, rUI *receiveUI) (receivePanel *t
 	configInfo.GetCell(0, 0).SetAlign(tview.AlignRight)
 	rUI.device = tview.NewTableCell(rUI.conf.Device)
 	configInfo.SetCell(0, 1, rUI.device)
+	if rUI.cr.openPortError != nil {
+		rUI.deviceError = tview.NewTableCell(rUI.cr.openPortError.Error())
+		configInfo.SetCell(0, 2, rUI.deviceError)
+	}
 
 	receivePanel = tview.NewFlex().SetDirection(tview.FlexRow).
 		AddItem(receiveInfo, 0, 1, false).
@@ -264,15 +269,18 @@ func createApplication(conf *config) (app *tview.Application) {
 	rUI.app = app
 	rUI.conf = conf
 	rUI.cr = cr
-	receivePanel := createReceivePanel(app, rUI)
-	logPanel := createTextViewPanel(app, "Log")
 
+	logPanel := createTextViewPanel(app, "Log")
 	log.SetOutput(logPanel)
+
+	rUI.cr.open(conf.Device)
+
+	receivePanel := createReceivePanel(app, rUI)
 
 	commandList := createCommandList()
 	commandList.AddItem("Power", "", 'p', powerCommand(pages, rUI))
 	commandList.AddItem("Quit", "", 'q', func() {
-		app.Stop()
+		shutdown(rUI)
 	})
 
 	layout := createLayout(commandList, receivePanel, logPanel)
@@ -300,6 +308,11 @@ func loadConfig() (conf *config) {
 		log.Println("Error: couldn't decode config file")
 	}
 	return conf
+}
+
+func shutdown(rUI *receiveUI) {
+	rUI.cr.close()
+	rUI.app.Stop()
 }
 
 func main() {

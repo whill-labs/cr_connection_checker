@@ -33,7 +33,10 @@ const (
 	DATA_SET_BODY_OFFSET = 3
 )
 
-type CRDriver struct{}
+type CRDriver struct {
+	port          serial.Port
+	openPortError error
+}
 
 type SetPowerBody struct {
 	CommandID byte
@@ -63,19 +66,13 @@ type DataSet1Body struct {
 }
 
 func (cr *CRDriver) turnOn(device string) error {
-	mode := &serial.Mode{
-		BaudRate: 38400,
+	if cr.openPortError != nil {
+		return cr.openPortError
 	}
-	port, err := serial.Open(device, mode)
-	if err != nil {
-		log.Println("serial open error: ", err)
-		return err
-	}
-	defer port.Close()
 
 	//power on (it needs to be set twirce)
 	data := []byte{0xAF, 0x03, 0x02, 0x01, 0xAF}
-	_, err = port.Write(data)
+	_, err := cr.port.Write(data)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -84,7 +81,7 @@ func (cr *CRDriver) turnOn(device string) error {
 	time.Sleep(time.Millisecond * 200)
 
 	data = []byte{0xAF, 0x03, 0x02, 0x01, 0xAF}
-	_, err = port.Write(data)
+	_, err = cr.port.Write(data)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -94,18 +91,12 @@ func (cr *CRDriver) turnOn(device string) error {
 }
 
 func (cr *CRDriver) turnOff(device string) error {
-	mode := &serial.Mode{
-		BaudRate: 38400,
+	if cr.openPortError != nil {
+		return cr.openPortError
 	}
-	port, err := serial.Open(device, mode)
-	if err != nil {
-		log.Println("serial open error: ", err)
-		return err
-	}
-	defer port.Close()
 
 	data := []byte{0xAF, 0x03, 0x02, 0x0, 0xAE}
-	_, err = port.Write(data)
+	_, err := cr.port.Write(data)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -115,8 +106,10 @@ func (cr *CRDriver) turnOff(device string) error {
 }
 
 func (cr *CRDriver) read(b []byte, port io.ReadWriteCloser) error {
-
-	_, err := port.Read(b)
+	if cr.openPortError != nil {
+		return cr.openPortError
+	}
+	_, err := cr.port.Read(b)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -127,20 +120,13 @@ func (cr *CRDriver) read(b []byte, port io.ReadWriteCloser) error {
 }
 
 func (cr *CRDriver) startSendingDataSet1(device string) error {
-	mode := &serial.Mode{
-		BaudRate: 38400,
+	if cr.openPortError != nil {
+		return cr.openPortError
 	}
-	port, err := serial.Open(device, mode)
-	if err != nil {
-		log.Println("serial open error: ", err)
-		return err
-	}
-	defer port.Close()
-
 	//send data
 	fmt.Println("sending data set 1")
 	data_conf := []byte{0xAF, 0x06, 0x0, 0x01, 0x03, 0xE8, 0x0, 0x43}
-	_, err = port.Write(data_conf)
+	_, err := cr.port.Write(data_conf)
 	if err != nil {
 		log.Println(err)
 	}
@@ -153,21 +139,11 @@ func (cr *CRDriver) receive(device string) error {
 		return err
 	}
 
-	mode := &serial.Mode{
-		BaudRate: 38400,
-	}
-	port, err := serial.Open(device, mode)
-	if err != nil {
-		log.Println("serial open error: ", err)
-		return err
-	}
-	defer port.Close()
-
 	for {
 		buff := make([]byte, 256)
 		for {
 			time.Sleep(time.Millisecond * 1000)
-			err = cr.read(buff, port)
+			err = cr.read(buff, cr.port)
 			if err != nil {
 				return err
 			}
@@ -175,6 +151,26 @@ func (cr *CRDriver) receive(device string) error {
 		}
 
 	}
+}
+
+func (cr *CRDriver) open(device string) error {
+	mode := &serial.Mode{
+		BaudRate: 38400,
+	}
+	port, err := serial.Open(device, mode)
+	if err != nil {
+		log.Println("serial open error: ", err)
+		cr.openPortError = err
+		return err
+	}
+	cr.port = port
+	return nil
+}
+func (cr *CRDriver) close() {
+	if cr.openPortError != nil {
+		return
+	}
+	cr.port.Close()
 }
 
 func calcChecksum(b []byte, len int) byte {

@@ -1,5 +1,5 @@
 
-NAME := tview_proto
+NAME := cr_connection_checker
 
 build:
 	for arch in amd64 arm64; do \
