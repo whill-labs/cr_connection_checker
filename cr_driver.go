@@ -65,7 +65,7 @@ type DataSet1Body struct {
 	AngleDetectCounter uint8
 }
 
-func (cr *CRDriver) turnOn(device string) error {
+func (cr *CRDriver) turnOn() error {
 	if cr.openPortError != nil {
 		return cr.openPortError
 	}
@@ -90,7 +90,7 @@ func (cr *CRDriver) turnOn(device string) error {
 	return err
 }
 
-func (cr *CRDriver) turnOff(device string) error {
+func (cr *CRDriver) turnOff() error {
 	if cr.openPortError != nil {
 		return cr.openPortError
 	}
@@ -119,38 +119,18 @@ func (cr *CRDriver) read(b []byte, port io.ReadWriteCloser) error {
 	return err
 }
 
-func (cr *CRDriver) startSendingDataSet1(device string) error {
+func (cr *CRDriver) startSendingDataSet1() error {
 	if cr.openPortError != nil {
 		return cr.openPortError
 	}
 	//send data
 	fmt.Println("sending data set 1")
-	data_conf := []byte{0xAF, 0x06, 0x0, 0x01, 0x03, 0xE8, 0x0, 0x43}
-	_, err := cr.port.Write(data_conf)
+	data := []byte{0xAF, 0x06, 0x0, 0x01, 0x03, 0xE8, 0x0, 0x43}
+	_, err := cr.port.Write(data)
 	if err != nil {
 		log.Println(err)
 	}
 	return err
-}
-
-func (cr *CRDriver) receive(device string) error {
-	err := cr.startSendingDataSet1(device)
-	if err != nil {
-		return err
-	}
-
-	for {
-		buff := make([]byte, 256)
-		for {
-			time.Sleep(time.Millisecond * 1000)
-			err = cr.read(buff, cr.port)
-			if err != nil {
-				return err
-			}
-			cr.analyze(buff)
-		}
-
-	}
 }
 
 func (cr *CRDriver) open(device string) error {
@@ -223,8 +203,6 @@ func (cr *CRDriver) parseDataSet1(b []byte, body DataSet1Body) error {
 }
 
 func (cr *CRDriver) analyze(b []byte) (body DataSet1Body, err error) {
-	fmt.Println("analyze")
-
 	if b[0] != 0xAF {
 		return body, nil
 	}
@@ -242,5 +220,15 @@ func (cr *CRDriver) analyze(b []byte) (body DataSet1Body, err error) {
 		//var body DataSet1Body
 		cr.parseDataSet1(b, body)
 	}
+	return body, err
+}
+
+func (cr *CRDriver) receive() (body DataSet1Body, err error) {
+	buff := make([]byte, 256)
+	err = cr.read(buff, cr.port)
+	if err != nil {
+		return body, err
+	}
+	body, err = cr.analyze(buff)
 	return body, err
 }

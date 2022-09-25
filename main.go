@@ -39,15 +39,15 @@ type receiveUI struct {
 
 const refreshInterval = 500 * time.Millisecond
 
+func queueUpdateAndDraw(app *tview.Application, f func()) {
+	app.QueueUpdateDraw(f)
+}
+
 //time
 
 func currentTimeString() string {
 	t := time.Now()
 	return fmt.Sprintf(t.Format("Current time is 15:04:05"))
-}
-
-func queueUpdateAndDraw(app *tview.Application, f func()) {
-	app.QueueUpdateDraw(f)
 }
 
 func (ui *receiveUI) updateTimeView(currentTime string) {
@@ -56,17 +56,44 @@ func (ui *receiveUI) updateTimeView(currentTime string) {
 	})
 }
 
-func (ui *receiveUI) updateReceivedData(data string) {
-	queueUpdateAndDraw(ui.app, func() {
-		ui.power.SetText(fmt.Sprintf("%s", data))
-		//ui.power.SetText(fmt.Sprintf("%s", data))
+func parseOnOff(onOff bool) string {
+	if onOff {
+		return "ON"
+	} else {
+		return "OFF"
+	}
+}
+
+func (rUI *receiveUI) updateReceivedData(data DataSet1Body) {
+	queueUpdateAndDraw(rUI.app, func() {
+		rUI.power.SetText(parseOnOff(data.IsPoweredOn))
+		rUI.rightMotorAngle.SetText(fmt.Sprintf("%d", data.RightMotorAngle))
+		rUI.leftMotorAngle.SetText(fmt.Sprintf("%d", data.LeftMotorAngle))
+		rUI.rightMotorSpeed.SetText(fmt.Sprintf("%d", data.RightMotorSpeed))
+		rUI.leftMotorSpeed.SetText(fmt.Sprintf("%d", data.LeftMotorSpeed))
+		rUI.angleDetectCounter.SetText(fmt.Sprintf("%d", data.AngleDetectCounter))
+		rUI.batteryPower.SetText(fmt.Sprintf("%d", data.BatteryPower))
+		rUI.batteryCurrent.SetText(fmt.Sprintf("%d", data.BatteryCurrent))
+		rUI.joyFront.SetText(fmt.Sprintf("%d", data.JoyFront))
+		rUI.joySide.SetText(fmt.Sprintf("%d", data.JoySide))
+		rUI.errorCode.SetText(fmt.Sprintf("%d", data.Error))
+		rUI.speedSetting.SetText(fmt.Sprintf("%d", data.SpeedModeIndicator))
 	})
 }
 
-func updateTime(ui *receiveUI) {
+func receive(rUI *receiveUI) error {
+	err := rUI.cr.startSendingDataSet1()
+	if err != nil {
+		return err
+	}
+
 	for {
 		time.Sleep(refreshInterval)
-		ui.updateTimeView(currentTimeString())
+		var data DataSet1Body
+		data, err = rUI.cr.receive()
+		if err != nil {
+			rUI.updateReceivedData(data)
+		}
 	}
 }
 
@@ -220,13 +247,13 @@ func powerCommand(pages *tview.Pages, rUI *receiveUI) func() {
 		onFunc := func() {
 			pages.SwitchToPage("main")
 			pages.RemovePage("modal")
-			rUI.cr.turnOn(rUI.conf.Device)
+			rUI.cr.turnOn()
 		}
 
 		offFunc := func() {
 			pages.SwitchToPage("main")
 			pages.RemovePage("modal")
-			rUI.cr.turnOff(rUI.conf.Device)
+			rUI.cr.turnOff()
 		}
 
 		form := tview.NewForm()
@@ -286,7 +313,7 @@ func createApplication(conf *config) (app *tview.Application) {
 	layout := createLayout(commandList, receivePanel, logPanel)
 	pages.AddPage("main", layout, true, true)
 
-	go updateTime(rUI)
+	go receive(rUI)
 	app.SetRoot(pages, true)
 	return app
 }
