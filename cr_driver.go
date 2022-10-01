@@ -192,15 +192,7 @@ func (cr *CRDriver) parseDataSet1(b []byte) (body DataSet1Body) {
 	body.SpeedModeIndicator = uint8(buff[26])
 	body.Error = uint8(buff[27])
 	body.AngleDetectCounter = uint8(buff[28])
-	/*
-		fmt.Printf("BatteryPower %d\n", body.BatteryPower)
-		fmt.Printf("JoyFront %d\n", body.JoyFront)
-		fmt.Printf("JoySide %d\n", body.JoySide)
-		fmt.Printf("BatteryCurrent %d\n", body.BatteryCurrent)
-		fmt.Printf("isPoweredOn %t\n", body.IsPoweredOn)
-		fmt.Printf("SpeedMode %x\n", body.SpeedModeIndicator)
-		fmt.Printf("Error %x\n", body.Error)
-	*/
+
 	return body
 }
 

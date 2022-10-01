@@ -1,0 +1,116 @@
+name: Release
+
+on:
+  push:
+    tags:
+    - "[0-9].[0-9]+.[0-9]+"
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go 1.15
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.19
+
+    - name: Check github.ref
+      run: |
+        echo ${{ github.ref }}
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Get dependencies
+      run: go get -v -t -d ./...
+
+    - name: Test code
+      run: go test -v ./...
+
+  setup-release:
+    name: Setup release
+    needs: test # This workflow is executed after completed 'test' job
+    runs-on: ubuntu-latest
+    steps:
+    - name: Create release
+      id: create_release
+      uses: actions/create-release@v1.0.0
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: ${{ github.ref }}
+        draft: false
+        prerelease: false
+
+    - name: Get url to upload to release from output
+      env:
+        url: ${{ steps.create_release.outputs.upload_url }}
+      run: |
+        mkdir artifact
+        echo $url > artifact/url.txt
+    - name: Upload artifact to share url with other jobs
+      uses: actions/upload-artifact@v1
+      with:
+        name: artifact
+        path: artifact/url.txt
+
+  release-binary:
+    name: Release Binary
+    needs: setup-release
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        archtec: [linux_amd64, linux_arm64, windows_amd64]
+        include:
+        - archtec: linux_amd64
+          goos: linux
+          arch: amd64
+        - archtec: arm64
+          goos: linux
+          arch: arm64
+        - archtec: windows_amd64
+          goos: windows
+          arch: amd64
+          ext: .exe
+    steps:
+    - name: Set up Go 1.19
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.19
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Get dependencies
+      run: go get -v -t -d ./...
+
+    - name: Build
+      run: |
+        mkdir dist
+        GCO_ENABLED=0 GOOS=$goos GOARCH=${{ matrix.arch }} go build -o dist/${{ github.event.repository.name }}${{ matrix.ext }} .
+        zip -j -r ${{ github.event.repository.name }}_${{ matrix.goos }}_${{ matrix.arch }} dist
+        ls
+
+    - name: Download artifact to get url to upload to release
+      uses: actions/download-artifact@v1
+      with:
+        name: artifact
+
+    - name: Get url to upload to release from artifact
+      id: get_url
+      run: |
+        url=$(cat artifact/url.txt)
+        echo "##[set-output name=upload_url;]$url"
+
+    - name: Upload release asset
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      with:
+        upload_url: ${{ steps.get_url.outputs.upload_url }}
+        asset_path: ./${{ github.event.repository.name }}_${{ matrix.goos }}_${{ matrix.arch }}.zip
+        asset_name: ${{ github.event.repository.name }}_${{ matrix.goos }}_${{ matrix.arch }}.zip
+        asset_content_type: application/octet-stream
