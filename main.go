@@ -91,6 +91,7 @@ func receive(rUI *receiveUI) error {
 		time.Sleep(refreshInterval)
 		var data DataSet1Body
 		data, err = rUI.cr.receive()
+		fmt.Printf("BatteryPower %d\n", data.BatteryPower)
 		if err != nil {
 			rUI.updateReceivedData(data)
 		}

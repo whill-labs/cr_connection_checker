@@ -169,7 +169,9 @@ func parseBool(b byte) bool {
 	}
 }
 
-func (cr *CRDriver) parseDataSet1(b []byte, body DataSet1Body) error {
+func (cr *CRDriver) parseDataSet1(b []byte) (body DataSet1Body) {
+
+	body.DataSetNumber = b[2]
 
 	buff := b[DATA_SET_BODY_OFFSET:]
 	body.AccelX = int16(buff[0])<<8 | int16(buff[1])
@@ -191,15 +193,15 @@ func (cr *CRDriver) parseDataSet1(b []byte, body DataSet1Body) error {
 	body.Error = uint8(buff[27])
 	body.AngleDetectCounter = uint8(buff[28])
 	/*
+		fmt.Printf("BatteryPower %d\n", body.BatteryPower)
 		fmt.Printf("JoyFront %d\n", body.JoyFront)
 		fmt.Printf("JoySide %d\n", body.JoySide)
-		fmt.Printf("BatteryPower %d\n", body.BatteryPower)
 		fmt.Printf("BatteryCurrent %d\n", body.BatteryCurrent)
 		fmt.Printf("isPoweredOn %t\n", body.IsPoweredOn)
 		fmt.Printf("SpeedMode %x\n", body.SpeedModeIndicator)
 		fmt.Printf("Error %x\n", body.Error)
 	*/
-	return nil
+	return body
 }
 
 func (cr *CRDriver) analyze(b []byte) (body DataSet1Body, err error) {
@@ -207,18 +209,21 @@ func (cr *CRDriver) analyze(b []byte) (body DataSet1Body, err error) {
 		return body, nil
 	}
 
-	//Data Set 1
 	length := b[1]
 	command := b[2]
+
+	if len(b) != int(length+2) {
+		log.Printf("analyze len not match b[1]:%d, len{buff) %d", length, len(b))
+		return body, nil
+	}
+
 	if length == 0x1F && Command(command) == DATA_SET_1 {
-		fmt.Println("recv data set 1: ")
 
 		if calcChecksum(b, (int)(length)) != b[length+1] {
 			err := fmt.Errorf("Checksum unmatch")
 			return body, err
 		}
-		//var body DataSet1Body
-		cr.parseDataSet1(b, body)
+		body = cr.parseDataSet1(b)
 	}
 	return body, err
 }

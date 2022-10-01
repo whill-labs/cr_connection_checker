@@ -11,4 +11,7 @@ build:
 clean:
 	rm bin/* -rf
 
+test:
+	go test -v ./...
+
 .PHONY: build clean
