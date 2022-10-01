@@ -73,7 +73,6 @@ jobs:
         - archtec: windows_amd64
           goos: windows
           arch: amd64
-          ext: .exe
     steps:
     - name: Set up Go 1.19
       uses: actions/setup-go@v1
@@ -89,7 +88,7 @@ jobs:
     - name: Build
       run: |
         mkdir ${{ github.event.repository.name }}_${{ matrix.goos }}_${{ matrix.arch }}
-        GCO_ENABLED=0 GOOS=$goos GOARCH=${{ matrix.arch }} go build -o ${{ github.event.repository.name }}_${{ matrix.goos }}_${{ matrix.arch }}/${{ github.event.repository.name }}${{ matrix.ext }} .
+        GCO_ENABLED=0 GOOS=$goos GOARCH=${{ matrix.arch }} go build -o ${{ github.event.repository.name }}_${{ matrix.goos }}_${{ matrix.arch }}/${{ github.event.repository.name }} .
         zip -r ${{ github.event.repository.name }}_${{ matrix.goos }}_${{ matrix.arch }} ${{ github.event.repository.name }}_${{ matrix.goos }}_${{ matrix.arch }}
         ls
 
