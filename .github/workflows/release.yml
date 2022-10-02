@@ -67,7 +67,7 @@ jobs:
         - archtec: linux_amd64
           goos: linux
           arch: amd64
-        - archtec: arm64
+        - archtec: linux_arm64
           goos: linux
           arch: arm64
         - archtec: windows_amd64
@@ -88,8 +88,9 @@ jobs:
     - name: Build
       run: |
         mkdir ${{ github.event.repository.name }}_${{ matrix.goos }}_${{ matrix.arch }}
-        GCO_ENABLED=0 GOOS=$goos GOARCH=${{ matrix.arch }} go build -o ${{ github.event.repository.name }}_${{ matrix.goos }}_${{ matrix.arch }}/${{ github.event.repository.name }} .
-        zip -r ${{ github.event.repository.name }}_${{ matrix.goos }}_${{ matrix.arch }} ${{ github.event.repository.name }}_${{ matrix.goos }}_${{ matrix.arch }}
+        cp docs/HOW_TO_USE.md ${{ github.event.repository.name }}_${{ matrix.goos }}_${{ matrix.arch }}/
+        GCO_ENABLED=0 GOOS=$goos GOARCH=$arch go build -o ${{ github.event.repository.name }}_$goos_$arch/${{ github.event.repository.name }} ./...
+        zip -r ${{ github.event.repository.name }}_$goos_$arch ${{ github.event.repository.name }}_$goos_$arch
         ls
 
     - name: Download artifact to get url to upload to release

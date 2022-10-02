@@ -7,12 +7,10 @@ RESET=\033[0m
 COLORIZE_PASS=sed ''/PASS/s//$$(printf "$(GREEN)PASS$(RESET)")/''
 COLORIZE_FAIL=sed ''/FAIL/s//$$(printf "$(RED)FAIL$(RESET)")/''
 
-GO_FILES = $(wildcard *.go)
-
 build:
 	for arch in amd64 arm64; do \
 		for os in linux windows; do \
-			CGO_ENABLED=0 GOOS=$$os GOARCH=$$arch go build -o bin/$$os/$$arch/$(NAME) $(GO_FILES); \
+			CGO_ENABLED=0 GOOS=$$os GOARCH=$$arch go build -o bin/$$os/$$arch/$(NAME)  ./...; \
 		done; \
 	done
 
