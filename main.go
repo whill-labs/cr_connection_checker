@@ -21,7 +21,6 @@ type receiveUI struct {
 	conf               *config
 	cr                 *CRDriver
 	power              *tview.TableCell
-	curTime            *tview.TableCell
 	rightMotorAngle    *tview.TableCell
 	leftMotorAngle     *tview.TableCell
 	rightMotorSpeed    *tview.TableCell
@@ -37,23 +36,10 @@ type receiveUI struct {
 	deviceError        *tview.TableCell
 }
 
-const refreshInterval uint16 = 1000
+const refreshInterval uint16 = 100
 
 func queueUpdateAndDraw(app *tview.Application, f func()) {
 	app.QueueUpdateDraw(f)
-}
-
-//time
-
-func currentTimeString() string {
-	t := time.Now()
-	return fmt.Sprintf(t.Format("Current time is 15:04:05"))
-}
-
-func (ui *receiveUI) updateTimeView(currentTime string) {
-	queueUpdateAndDraw(ui.app, func() {
-		ui.curTime.SetText(fmt.Sprintf("%s", currentTime))
-	})
 }
 
 func parseOnOff(onOff bool) string {
