@@ -1,15 +1,9 @@
 package main
 
 import (
-	"encoding/binary"
 	"testing"
 )
 
-func Uint2bytes(i uint64, size int) []byte {
-	bytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(bytes, i)
-	return bytes[8-size : 8]
-}
 func Int2bytes(i int, size int) []byte {
 	var ui uint64
 	if 0 < i {
@@ -66,6 +60,20 @@ func TestAnalyzeSample(t *testing.T) {
 	}
 }
 
+func TestSendingDataSet1(t *testing.T) {
+	data := []byte{0xaf, 0x6}
+	data = append(data, 0x0) //command
+	data = append(data, 0x1) //data set 1
+	timeInterval := 1000
+	data = append(data, Uint2bytes(uint64(timeInterval), 2)...)
+	data = append(data, 0x0) //speed mode 0
+	length := data[1]
+	checksum := calcChecksum(data, int(length))
+	if checksum != 0x43 {
+		t.Errorf("checksum error %d", checksum)
+	}
+
+}
 func TestAnalyze(t *testing.T) {
 	dummyData := []byte{0xaf, 0x1f}
 

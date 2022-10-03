@@ -37,7 +37,7 @@ type receiveUI struct {
 	deviceError        *tview.TableCell
 }
 
-const refreshInterval = 500 * time.Millisecond
+const refreshInterval uint16 = 1000
 
 func queueUpdateAndDraw(app *tview.Application, f func()) {
 	app.QueueUpdateDraw(f)
@@ -82,17 +82,17 @@ func (rUI *receiveUI) updateReceivedData(data DataSet1Body) {
 }
 
 func receive(rUI *receiveUI) error {
-	err := rUI.cr.startSendingDataSet1()
+	err := rUI.cr.startSendingDataSet1(refreshInterval)
 	if err != nil {
 		return err
 	}
 
 	for {
-		time.Sleep(refreshInterval)
+		time.Sleep((time.Duration)(refreshInterval) * time.Millisecond)
 		var data DataSet1Body
 		data, err = rUI.cr.receive()
-		fmt.Printf("BatteryPower %d\n", data.BatteryPower)
 		if err != nil {
+		} else {
 			rUI.updateReceivedData(data)
 		}
 	}
@@ -119,18 +119,6 @@ func createReceivePanel(app *tview.Application, rUI *receiveUI) (receivePanel *t
 	receiveInfo.SetBorder(true).SetTitle("Receive")
 
 	cnt := 0
-	receiveInfo.SetCellSimple(cnt, 0, "Power:")
-	receiveInfo.GetCell(cnt, 0).SetAlign(tview.AlignRight)
-	rUI.power = tview.NewTableCell("OFF")
-	receiveInfo.SetCell(cnt, 1, rUI.power)
-	cnt++
-
-	receiveInfo.SetCellSimple(cnt, 0, "Time:")
-	receiveInfo.GetCell(cnt, 0).SetAlign(tview.AlignRight)
-	rUI.curTime = tview.NewTableCell("0")
-	receiveInfo.SetCell(cnt, 1, rUI.curTime)
-	cnt++
-
 	receiveInfo.SetCellSimple(cnt, 0, "Power:")
 	receiveInfo.GetCell(cnt, 0).SetAlign(tview.AlignRight)
 	rUI.power = tview.NewTableCell("OFF")

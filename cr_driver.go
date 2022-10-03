@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/binary"
 	"fmt"
 	"io"
 	"log"
@@ -11,9 +12,7 @@ import (
 
 type CRHeader struct {
 	ProtocolHead byte
-	DataLength   byte
-	Body         []byte
-	CheckSum     byte
+	Length       byte
 }
 
 type Command int
@@ -119,13 +118,21 @@ func (cr *CRDriver) read(b []byte, port io.ReadWriteCloser) error {
 	return err
 }
 
-func (cr *CRDriver) startSendingDataSet1() error {
+func (cr *CRDriver) startSendingDataSet1(interval uint16) error {
 	if cr.openPortError != nil {
 		return cr.openPortError
 	}
 	//send data
-	fmt.Println("sending data set 1")
-	data := []byte{0xAF, 0x06, 0x0, 0x01, 0x03, 0xE8, 0x0, 0x43}
+	//fmt.Println("sending data set 1")
+	data := []byte{0xaf, 0x6}
+	data = append(data, 0x0) //command
+	data = append(data, 0x1) //data set 1
+	data = append(data, Uint2bytes(uint64(interval), 2)...)
+	data = append(data, 0x0) //speed mode 0
+	length := data[1]
+	checksum := calcChecksum(data, int(length))
+	data = append(data, Uint2bytes(uint64(checksum), 1)...)
+
 	_, err := cr.port.Write(data)
 	if err != nil {
 		log.Println(err)
@@ -197,6 +204,7 @@ func (cr *CRDriver) parseDataSet1(b []byte) (body DataSet1Body) {
 }
 
 func (cr *CRDriver) analyze(b []byte) (body DataSet1Body, err error) {
+
 	if b[0] != 0xAF {
 		return body, nil
 	}
@@ -204,13 +212,12 @@ func (cr *CRDriver) analyze(b []byte) (body DataSet1Body, err error) {
 	length := b[1]
 	command := b[2]
 
-	if len(b) != int(length+2) {
-		log.Printf("analyze len not match b[1]:%d, len{buff) %d", length, len(b))
+	if len(b) < int(length+2) {
+		log.Printf("buffer size less than received size b[1]:%d, len{buff) %d", length, len(b))
 		return body, nil
 	}
 
 	if length == 0x1F && Command(command) == DATA_SET_1 {
-
 		if calcChecksum(b, (int)(length)) != b[length+1] {
 			err := fmt.Errorf("Checksum unmatch")
 			return body, err
@@ -224,8 +231,15 @@ func (cr *CRDriver) receive() (body DataSet1Body, err error) {
 	buff := make([]byte, 256)
 	err = cr.read(buff, cr.port)
 	if err != nil {
+		fmt.Println("read error")
 		return body, err
 	}
 	body, err = cr.analyze(buff)
 	return body, err
+}
+
+func Uint2bytes(i uint64, size int) []byte {
+	bytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(bytes, i)
+	return bytes[8-size : 8]
 }
