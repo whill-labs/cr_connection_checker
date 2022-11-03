@@ -160,6 +160,14 @@ func (cr *CRDriver) close() {
 	cr.port.Close()
 }
 
+func (cr *CRDriver) setReadTimeout(t time.Duration) error {
+	err := cr.port.SetReadTimeout(t)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func calcChecksum(b []byte, len int) byte {
 	var checksum byte
 	for i := 0; i < len+1; i++ {
@@ -220,6 +228,7 @@ func (cr *CRDriver) analyze(b []byte) (body DataSet1Body, err error) {
 	if length == 0x1F && Command(command) == DATA_SET_1 {
 		if calcChecksum(b, (int)(length)) != b[length+1] {
 			err := fmt.Errorf("Checksum unmatch")
+			log.Println(err)
 			return body, err
 		}
 		body = cr.parseDataSet1(b)
@@ -231,7 +240,7 @@ func (cr *CRDriver) receive() (body DataSet1Body, err error) {
 	buff := make([]byte, 256)
 	err = cr.read(buff, cr.port)
 	if err != nil {
-		fmt.Println("read error")
+		log.Println("read error")
 		return body, err
 	}
 	body, err = cr.analyze(buff)

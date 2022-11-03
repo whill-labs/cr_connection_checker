@@ -36,7 +36,7 @@ type receiveUI struct {
 	deviceError        *tview.TableCell
 }
 
-const refreshInterval uint16 = 100
+const refreshInterval uint16 = 1000
 
 func queueUpdateAndDraw(app *tview.Application, f func()) {
 	app.QueueUpdateDraw(f)
@@ -275,7 +275,10 @@ func createApplication(conf *config) (app *tview.Application) {
 	logPanel := createTextViewPanel(app, "Log")
 	log.SetOutput(logPanel)
 
-	rUI.cr.open(conf.Device)
+	err := rUI.cr.open(conf.Device)
+	if err == nil {
+		rUI.cr.setReadTimeout((time.Duration)(refreshInterval) * time.Microsecond * 2)
+	}
 
 	receivePanel := createReceivePanel(app, rUI)
 
