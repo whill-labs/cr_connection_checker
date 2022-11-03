@@ -114,7 +114,7 @@ func (cr *CRDriver) read(b []byte, port io.ReadWriteCloser) error {
 		return err
 	}
 
-	//fmt.Printf("%v\n", hex.EncodeToString(b[:n]))
+	//fmt.Printf("%v\n", hex.EncodeToString(b[:]))
 	return err
 }
 
@@ -214,7 +214,7 @@ func (cr *CRDriver) parseDataSet1(b []byte) (body DataSet1Body) {
 func (cr *CRDriver) analyze(b []byte) (body DataSet1Body, err error) {
 
 	if b[0] != 0xAF {
-		return body, nil
+		return body, fmt.Errorf("analyze fail protocol header")
 	}
 
 	length := b[1]
@@ -222,7 +222,7 @@ func (cr *CRDriver) analyze(b []byte) (body DataSet1Body, err error) {
 
 	if len(b) < int(length+2) {
 		log.Printf("buffer size less than received size b[1]:%d, len{buff) %d", length, len(b))
-		return body, nil
+		return body, fmt.Errorf("analyze fail buffer size")
 	}
 
 	if length == 0x1F && Command(command) == DATA_SET_1 {
@@ -237,10 +237,10 @@ func (cr *CRDriver) analyze(b []byte) (body DataSet1Body, err error) {
 }
 
 func (cr *CRDriver) receive() (body DataSet1Body, err error) {
-	buff := make([]byte, 256)
+	buff := make([]byte, 64)
 	err = cr.read(buff, cr.port)
 	if err != nil {
-		log.Println("read error")
+		log.Println("serial read error")
 		return body, err
 	}
 	body, err = cr.analyze(buff)

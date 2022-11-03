@@ -36,7 +36,7 @@ type receiveUI struct {
 	deviceError        *tview.TableCell
 }
 
-const refreshInterval uint16 = 1000
+const refreshInterval uint16 = 100
 
 func queueUpdateAndDraw(app *tview.Application, f func()) {
 	app.QueueUpdateDraw(f)
