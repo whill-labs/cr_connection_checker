@@ -92,7 +92,7 @@ jobs:
         cp config/device.json ${{ github.event.repository.name }}_${{ matrix.goos }}_${{ matrix.arch }}/
 
     - name: Add files for Windows
-      if: ${{ matrix.goos }} == windows_amd64
+      if: matrix.archtec == 'windows_amd64'
       run: |
         cp util/remane_file.bat ${{ github.event.repository.name }}_${{ matrix.goos }}_${{ matrix.arch }}/
 
