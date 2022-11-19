@@ -228,7 +228,6 @@ func (cr *CRDriver) analyze(b []byte) (body DataSet1Body, err error) {
 	if length == 0x1F && Command(command) == DATA_SET_1 {
 		if calcChecksum(b, (int)(length)) != b[length+1] {
 			err := fmt.Errorf("Checksum unmatch")
-			log.Println(err)
 			return body, err
 		}
 		body = cr.parseDataSet1(b)

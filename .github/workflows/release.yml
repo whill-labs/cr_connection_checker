@@ -85,10 +85,19 @@ jobs:
     - name: Get dependencies
       run: go get -v -t -d ./...
 
-    - name: Build
+    - name: Make package directory
       run: |
         mkdir ${{ github.event.repository.name }}_${{ matrix.goos }}_${{ matrix.arch }}
         cp docs/HOW_TO_USE.md ${{ github.event.repository.name }}_${{ matrix.goos }}_${{ matrix.arch }}/
+        cp config/device.json ${{ github.event.repository.name }}_${{ matrix.goos }}_${{ matrix.arch }}/
+
+    - name: Add files for Windows
+      if: ${{ matrix.goos }} == windows_amd64
+      run: |
+        cp util/remane_file.bat ${{ github.event.repository.name }}_${{ matrix.goos }}_${{ matrix.arch }}/
+
+    - name: Build
+      run: |
         GCO_ENABLED=0 GOOS=${{matrix.goos}} GOARCH=${{matrix.arch}} go build -o ${{ github.event.repository.name }}_${{ matrix.goos }}_${{ matrix.arch }}/${{ github.event.repository.name }} ./...
         zip -r ${{ github.event.repository.name }}_${{ matrix.goos }}_${{ matrix.arch }} ${{ github.event.repository.name }}_${{ matrix.goos }}_${{ matrix.arch }}
         ls
