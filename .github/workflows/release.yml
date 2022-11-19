@@ -88,7 +88,7 @@ jobs:
     - name: Make package directory
       run: |
         mkdir ${{ github.event.repository.name }}_${{ matrix.goos }}_${{ matrix.arch }}
-        cp docs/HOW_TO_USE.md ${{ github.event.repository.name }}_${{ matrix.goos }}_${{ matrix.arch }}/
+        cp docs/README.md ${{ github.event.repository.name }}_${{ matrix.goos }}_${{ matrix.arch }}/
         cp config/device.json ${{ github.event.repository.name }}_${{ matrix.goos }}_${{ matrix.arch }}/
 
     - name: Add files for Windows
