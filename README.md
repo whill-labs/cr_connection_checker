@@ -4,6 +4,8 @@
 
 本チェッカーはTUI : Terminal上で動作するアプリケーションです
 
+![](./docs/image/normal_screen_power_on.png)
+
 Terminal上で実行ファイルを実行して使用してください
 
 
@@ -55,4 +57,16 @@ defaultは"/dev/ttyUSB0"となっているので適宜変更すること
 ```
 
 ### 操作方法
-[How to use](https://github.com/s-katsu/cr_connection_checker/blob/main/docs/HOW_TO_USE.md)参照
+
+接続がされている状態で"Receive"欄に機体から受信した情報が更新される
+機体が電源ONの状態でBattery Poewerなどが表示されていれば正常に通信できている
+
+![](./docs/image/normal_screen_power_on.png)
+
+
+"Command"欄の操作
+
+p : 機体の電源ON/OFF
+q : アプリの終了
+
+![](./docs/image/menu_power.png)
